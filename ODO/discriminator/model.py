@@ -36,7 +36,7 @@ class Net(torch.nn.Module):
         loss_func = torch.nn.L1Loss().cuda()  # this is for regression mean squared loss
         # reduces lr as learning levels off
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3)
-        for epoch in range(0, 2):
+        for epoch in range(0, 50):
             # train the network
             total_loss = 0.0
             for step, (x, y) in tqdm(enumerate(loader), total=len(loader)):
@@ -47,7 +47,7 @@ class Net(torch.nn.Module):
                 optimizer.step()  # apply gradients
                 total_loss += float(loss)
             scheduler.step(total_loss)
-            print(total_loss)
+            print('Loss = {}'.format(total_loss))
 
     def save_ckpt(self):
         torch.save(self.state_dict(), './net.ckpt')
@@ -59,6 +59,9 @@ class Net(torch.nn.Module):
         predict = np.array([x[0] for x in predict])
         slope, intercept, r_value, p_value, std_err = linregress(y, predict)
         print("R-squared: %f" % r_value ** 2)
+
+    def evaluate_vectors(self, data):
+        
         
     
 

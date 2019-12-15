@@ -1,7 +1,10 @@
 #!/usr/local/bin/env python
 import pandas as pd
+import numpy as np
+from random import random
+import math
 
-def get_headings(activity=False, string=False):
+def get_headings(activity=False):
     """
     This returns a fixed order for descriptor headings, as DescriptorCalculator may give back vectors in any order.
     :return:
@@ -10,8 +13,6 @@ def get_headings(activity=False, string=False):
     if not activity:
         #remove last colum from str
         headings = headings[:-10]
-    if string:
-        return headings
     headings = headings.split(',')
     return headings
 
@@ -23,12 +24,22 @@ def prob_round(x):
     return sign * round_func(x)
 
 def save_vectors(vectors, file_name):
-    header = get_headings(string=True)
-    np.savetxt(file_name, vectors, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
+    header = get_headings()
+    np.savetxt(file_name, vectors, header=','.join(header), fmt='%.18e', delimiter=',', comments='', newline='\n')
 
-def get_opt_input(smi_file, vec_file, property_name='pactivity', index=0):
+def get_opt_input(data_dir, smi_file, vec_file, property_name='pactivity', index=0):
+    smi_file = data_dir+smi_file
+    vec_file = data_dir+vec_file
     smi_data = pd.read_csv(smi_file, header=None).values
-    vec_data = pd.read_csv(vec_file, header=None)
+    vec_data = pd.read_csv(vec_file, header=0)
     activity = vec_data[property_name]
     vec_data = vec_data.reindex(columns=get_headings(activity=False)).values
     return vec_data[index], activity[index], smi_data[index]
+
+def get_float_bool(data_dir, file):
+    file = data_dir+file
+    float_bool = pd.read_csv(file, header=0, dtype=int)
+    float_bool = float_bool.reindex(columns=get_headings())
+    assert len(float_bool.values) == 1
+    return float_bool.values[0]
+
