@@ -11,22 +11,26 @@ from .utils import get_headings
 
 
 class Dataset_discrim(Data.Dataset):
-    def __init__(self, file):
-        x = pd.read_csv(file, header=0)
-        x = x.reindex(columns=get_headings(activity=True))
-        x = x.values.transpose()
-        y = x[-1]
-        x = x[:-1]
-        x = x.transpose()
-        y = np.array([[i] for i in y])
+    def __init__(self, d_file, t_file):
+        # Read and scale descriptors
+        x = pd.read_csv(d_file, header=0)
+        # Removes smiles colum
+        x = x.reindex(columns=get_headings())
+        x = x.values
         scalerx = MinMaxScaler(feature_range=(0, 1))
         scalerx.fit(x)
         x = scalerx.transform(x)
         self.scalerx = scalerx
+
+        # Read and scale target property
+        y = pd.read_csv(t_file, header=0)
+        y = y.values
         scalery = MinMaxScaler(feature_range=(0, 1))
         scalery.fit(y)
         y = scalery.transform(y)
         self.scalery = scalery
+
+        # Save data as pytorch arrays
         self.x = torch.from_numpy(x).float()
         self.y = torch.from_numpy(y).float()
 

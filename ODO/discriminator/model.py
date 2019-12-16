@@ -36,7 +36,7 @@ class Net(torch.nn.Module):
         loss_func = torch.nn.L1Loss().cuda()  # this is for regression mean squared loss
         # reduces lr as learning levels off
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3)
-        for epoch in range(0, 50):
+        for epoch in range(0, 20):
             # train the network
             total_loss = 0.0
             for step, (x, y) in tqdm(enumerate(loader), total=len(loader)):
@@ -61,7 +61,7 @@ class Net(torch.nn.Module):
         print("R-squared: %f" % r_value ** 2)
 
     def evaluate_vectors(self, data):
-        
+        pass
         
     
 
