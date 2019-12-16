@@ -10,7 +10,7 @@ import time
 import torch
 from torch.utils.data import Dataset
 
-from .utils import Variable, get_latent_vector, get_headings
+from .utils import Variable, get_headings, get_moments
 
 class Vocabulary(object):
     """A class for handling encoding/decoding from SMILES to an array of indices"""
@@ -97,22 +97,21 @@ class Dataset_gen(Dataset):
                 if i != 0:
                     smi_string = line.split(',')[0]
                     self.smiles.append(smi_string)
-        self.vectors, self.mew, self.std = get_latent_vector(self.smiles, vec_file, moments=True)
+
+        # reading descriptors
+        data = pandas.read_csv(vec_file)
+        # correct heading order
+        data = data.reindex(columns=get_headings())
+        data = data.values
+        self.vectors = data
+        data_t = data.transpose()
+        self.mew, self.std = get_moments(data_t)
+        # catch any zeros which will give nan when normalizing
+        self.std = [x if x != 0 else 1.0 for x in self.std]
+
         self.vectors = (self.vectors - self.mew) / self.std
         print('mew: {}'.format(self.mew))
         print('std: {}'.format(self.std)) 
-        if vec_file is None:
-            print('Saving vectors')
-            vectors_write = [np.append(i, vec) for i, vec in enumerate(self.vectors)]
-            header = get_headings()
-            header = np.append('CompoundID', header)
-            str_header = ""
-            for i, ele in enumerate(header):
-                if i != 0:
-                    str_header += ','+ele
-                else:
-                    str_header += ele
-            np.savetxt('./data/vecs.dat', vectors_write, header=str_header, fmt='%.18e', delimiter=',', comments='', newline='\n')
 
     def __len__(self):
         return len(self.smiles)

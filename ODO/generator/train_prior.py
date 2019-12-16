@@ -13,20 +13,22 @@ from .model import RNN
 from .utils import Variable, decrease_learning_rate
 rdBase.DisableLog('rdApp.error')
 
-def pretrain(restore_from=None):
+def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None):
     """Trains the Prior RNN"""
+    voc_file = data_dir+voc_file
+    vec_file = data_dir+vec_file
+    mol_file = data_dir+mol_file
 
     # Read vocabulary from a file
-    voc = Vocabulary(init_from_file="data/Voc")
+    voc = Vocabulary(init_from_file=voc_file)
 
     batch_size = 128
 
     # Create a Dataset from a SMILES file
-    if path.isfile('./data/vecs.dat'):
-        print('Found vectors, reading from file')
-        data = Dataset_gen(voc, "data/mols.smi", vec_file='./data/vecs.dat')
-    else:
-        data = Dataset_gen(voc, "data/mols.smi", vec_file=None)
+
+    print('Found vectors, reading from file')
+    data = Dataset_gen(voc, mol_file, vec_file=vec_file)
+
     loader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True,
                         collate_fn=Dataset_gen.collate_fn)
     
@@ -72,10 +74,10 @@ def pretrain(restore_from=None):
                         tqdm.write(smile)
                 tqdm.write("\n{:>4.1f}% valid SMILES".format(100 * valid / len(seqs)))
                 tqdm.write("*" * 50 + "\n")
-                torch.save(Prior.rnn.state_dict(), "data/Prior.ckpt")
+                torch.save(Prior.rnn.state_dict(), save_to)
 
         # Save the Prior
-        torch.save(Prior.rnn.state_dict(), "data/Prior.ckpt")
+        torch.save(Prior.rnn.state_dict(), save_to)
 
 if __name__ == "__main__":
     pretrain()

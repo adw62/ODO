@@ -61,49 +61,6 @@ def get_moments(vectors):
     std = [np.std(x) for x in vectors]
     return mew, std
 
-def get_latent_vector(smiles, vec_file=None, moments=False):
-    headings = get_headings()
 
-    if vec_file is None:
-        generated_vectors = True
-        #check of smiles are valid
-        # write smiles to file
-        invalid = []
-        with open('./current_smi.dat', 'w') as f:
-            f.write('INDEX, SMILES\n')
-            for i, smi in enumerate(smiles):
-                f.write('{0}, {1}\n'.format(smi, i))
-                if not Chem.MolFromSmiles(smi):
-                    # record indexes of bad smiles
-                    invalid.append(i)
-        print('{} invalid smiles caught'.format(len(invalid)))
-
-        #run descriptor generation, last 2 arguments are silencing this subprocess
-        subprocess.call(["/usr/bin/python2.7", "./DescriptorCalculation.py"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-
-        vec_file = './results/output'
-    else:
-        generated_vectors = False
-
-    #reading descriptors
-    data = pandas.read_csv(vec_file)
-    # correct heading order
-    data = data.reindex(columns=headings)
-    data = data.values
-
-    #Address bad vectors in generated data, if we have generated them from smiles internally
-    if generated_vectors:
-        data = [x if i not in invalid else False for i, x in enumerate(data)]
-
-    #Calculate mew and std for each colum, used in scoring function to normalize data
-    if moments:
-        vectors = data.transpose()
-        mew = [np.average(x) for x in vectors]
-        std = [np.std(x) for x in vectors]
-        #catch any zeros which will give nan when normalizing
-        std = [x if x != 0 else 1.0 for x in std]
-        return data, mew, std
-    else:
-        return data
 
 
