@@ -59,10 +59,6 @@ class Net(torch.nn.Module):
         predict = np.array([x[0] for x in predict])
         slope, intercept, r_value, p_value, std_err = linregress(y, predict)
         print("R-squared: %f" % r_value ** 2)
-
-    def evaluate_vectors(self, data):
-        pass
-        
     
 
 

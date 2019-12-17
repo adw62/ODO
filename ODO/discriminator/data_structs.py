@@ -9,7 +9,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 from .utils import get_headings
 
-
 class Dataset_discrim(Data.Dataset):
     def __init__(self, d_file, t_file):
         # Read and scale descriptors

@@ -43,34 +43,51 @@ def grouper(iterable, n, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 def calc_descrs_for_smiles(smi):
+    failed = [smi]
+    failed.extend([float('inf') for i in Descriptors.descList])
+
     if smi is None:
-        return [float('inf') for i in Descriptors.descList]
+        return failed
+
     m = Chem.MolFromSmiles(smi)
     if m is None:
-        raise ValueError('RDkit could not pass smiles')
+        print('RDkit could not pass smiles')
+        return failed
+
     discp = [y(m) for x,y in Descriptors.descList]
     if float('nan') in discp:
-        raise ValueError('RDkit has returned a nan')
-    return discp
+        print('RDkit has returned a nan')
+        return failed
 
-def get_latent_vecs(mols, file_name, num_procs=4):
+    res = [smi]
+    res.extend(discp)
+    return res
+
+def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
+
     headings = get_headings()
     num_lines = int(min(50000, len(mols)))
     n = int(len(mols) / num_lines)
 
-    f = open(file_name, 'ab')
+    f1 = open(data_dir+'input_mols_filtered.csv', 'ab')
+    file_name = data_dir + file_name
+    f2 = open(file_name, 'ab')
     for i, group in enumerate(grouper(mols, num_lines)):
         if i == 0:
+            smi_head = 'smiles'
             header = ','.join(headings)
         else:
             header = ''
+            smi_head = ''
         print('Processing group {}/{}'.format(i, n))
         with Pool(processes=num_procs) as pool:
             res = pool.map(calc_descrs_for_smiles, group)
-        if i == n:
-            res = [x for x in res if float('inf') not in x]
-        np.savetxt(f, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
-    f.close()
+        res = [x for x in res if float('inf') not in x]
+        smi = [x.pop(0) for x in res]
+        np.savetxt(f1, smi, header=smi_head, fmt='%s', delimiter=',', comments='', newline='\n')
+        np.savetxt(f2, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
+    f1.close()
+    f2.close()
 
 
 
