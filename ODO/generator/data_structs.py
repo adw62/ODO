@@ -9,8 +9,11 @@ import sys
 import time
 import torch
 from torch.utils.data import Dataset
+import pandas as pd
 
-from .utils import Variable, get_headings, get_moments
+from .utils import Variable, get_moments
+from discriminator.utils import get_headings
+
 
 class Vocabulary(object):
     """A class for handling encoding/decoding from SMILES to an array of indices"""
@@ -90,30 +93,22 @@ class Dataset_gen(Dataset):
                 on a sample.
         """
         self.voc = voc
-        self.smiles = []
-        with open(smi_file, 'r') as f:
-            for i, line in enumerate(f):
-                # remove header
-                if i != 0:
-                    smi_string = line.split(',')[0]
-                    self.smiles.append(smi_string)
+        self.smiles = pd.read_csv(smi_file, header=0, dtype=str).values
+        self.smiles = [x[0] for x in self.smiles]
 
         # reading descriptors
-        data = pandas.read_csv(vec_file)
+        data = pd.read_csv(vec_file, header=0)
         # correct heading order
         data = data.reindex(columns=get_headings())
-        data = data.values
-        self.vectors = data
-        data_t = data.transpose()
-        self.mew, self.std = get_moments(data_t)
+        self.vectors = data.values
+        self.mew, self.std = get_moments(self.vectors)
         # catch any zeros which will give nan when normalizing
         self.std = [x if x != 0 else 1.0 for x in self.std]
-
         self.vectors = (self.vectors - self.mew) / self.std
-        print('mew: {}'.format(self.mew))
-        print('std: {}'.format(self.std)) 
 
     def __len__(self):
+        if len(self.smiles) != len(self.vectors):
+            raise ValueError('Smiles and Vector lengths mismatched')
         return len(self.smiles)
 
     def __getitem__(self, i):

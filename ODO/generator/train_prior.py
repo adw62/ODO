@@ -18,6 +18,7 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
     voc_file = data_dir+voc_file
     vec_file = data_dir+vec_file
     mol_file = data_dir+mol_file
+    save_to = data_dir+save_to
 
     # Read vocabulary from a file
     voc = Vocabulary(init_from_file=voc_file)
