@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from random import random
 import math
+import os
 
 from multiprocessing import Pool
 from itertools import zip_longest
@@ -21,7 +22,7 @@ def prob_round(x):
     round_func = math.ceil if is_up else math.floor
     return sign * round_func(x)
 
-def get_opt_input(data_dir, smi_file, vec_file, target_file, index=0):
+def get_opt_input(data_dir, smi_file, vec_file, target_file, index=300):
     smi_file = data_dir+smi_file
     vec_file = data_dir+vec_file
     target_file = data_dir+target_file
@@ -69,6 +70,8 @@ def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
     num_lines = int(min(50000, len(mols)))
     n = int(len(mols) / num_lines)
 
+    if os.path.exists((data_dir+'input_mols_filtered.csv')):
+        pass
     f1 = open(data_dir+'input_mols_filtered.csv', 'ab')
     file_name = data_dir + file_name
     f2 = open(file_name, 'ab')
