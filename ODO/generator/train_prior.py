@@ -43,7 +43,7 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
         Prior.rnn.load_state_dict(torch.load(restore_from))
     
     optimizer = torch.optim.Adam(Prior.rnn.parameters(), lr=0.001)
-    for epoch in range(1):
+    for epoch in range(5):
         # When training on a few million compounds, this model converges
         # in a few of epochs or even faster. If model sized is increased
         # its probably a good idea to check loss against an external set of
