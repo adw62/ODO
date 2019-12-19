@@ -98,12 +98,22 @@ class Dataset_gen(Dataset):
 
         # reading descriptors
         data = pd.read_csv(vec_file, header=0)
-        # correct heading order
-        data = data.reindex(columns=get_headings())
+        #look for missing data entries
+        if data.isnull().values.any():
+            raise ValueError('Found nan in data, possible data missing in generation vectors.')
+
+        #correct heading order
+        headings = get_headings()
+        data = data.reindex(columns=headings)
+        #look for missing columns
+        if data.isnull().values.any():
+            raise ValueError('Found nan in data, possible columns missing in generation vectors.')
+
+        #calculate mew and std for normilization of generation vectors
         self.vectors = data.values
         self.mew, self.std = get_moments(self.vectors)
         # catch any zeros which will give nan when normalizing
-        self.std = [x if x != 0 else 1.0 for x in self.std]
+        self.std = np.array([x if x != 0 else 1.0 for x in self.std])
         self.vectors = (self.vectors - self.mew) / self.std
 
     def __len__(self):

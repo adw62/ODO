@@ -30,6 +30,7 @@ class MultiGRU(nn.Module):
     def init_h(self, batch_size, latent_vectors):
         # Initial cell state is zero
         #x = Variable(torch.zeros(3, batch_size, 330))
+        latent_vectors = latent_vectors.repeat(1, 2)
         return Variable(latent_vectors.repeat(3, 1, 1))
 
 class RNN():

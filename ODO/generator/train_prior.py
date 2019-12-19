@@ -32,15 +32,18 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
 
     loader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True,
                         collate_fn=Dataset_gen.collate_fn)
-    
-    Prior = RNN(voc, len(data[0][1]))
+    network_size = len(data[0][1])
+    if network_size < 512:
+        network_size = network_size*2
+        print('Network expanded to size {}'.format(network_size))
+    Prior = RNN(voc, network_size)
 
     # Can restore from a saved RNN
     if restore_from:
         Prior.rnn.load_state_dict(torch.load(restore_from))
     
     optimizer = torch.optim.Adam(Prior.rnn.parameters(), lr=0.001)
-    for epoch in range(1, 6):
+    for epoch in range(1):
         # When training on a few million compounds, this model converges
         # in a few of epochs or even faster. If model sized is increased
         # its probably a good idea to check loss against an external set of
@@ -79,6 +82,7 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
 
         # Save the Prior
         torch.save(Prior.rnn.state_dict(), save_to)
+    return data.mew, data.std
 
 if __name__ == "__main__":
     pretrain()

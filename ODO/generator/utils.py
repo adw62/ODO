@@ -47,8 +47,8 @@ def unique(arr):
 
 def get_moments(vectors):
     vectors = vectors.transpose()
-    mew = np.array([np.average(x) for x in vectors])
-    std = np.array([np.std(x) for x in vectors])
-    return mew.transpose(), std.transpose()
+    mew = np.array([np.average(x) for x in vectors]).transpose()
+    std = np.array([np.std(x) for x in vectors]).transpose()
+    return mew, std
 
 
