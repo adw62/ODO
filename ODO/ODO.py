@@ -30,7 +30,7 @@ class ODO(object):
         self.gen_data_dir = './generator/data/'
         self.gen_ckpt_file = self.gen_data_dir+'vector_based/Prior.ckpt'
 
-        self.target = -8
+        self.target = 9.2
         #Make a discriminative model and use finite differnces to solev this modle for a set of inputs predicted to give a set target
         self.y_property, self.x_solution = ODO.discrim(self, target_property=self.target)
         print('Optimized solution has activity {}'.format(self.y_property))
@@ -85,7 +85,7 @@ class ODO(object):
         net.to('cuda')
         return net
 
-    def discrim(self, start_property=6, target_property=7, optimize=True):
+    def discrim(self, target_property, optimize=True):
         net = ODO.load_discrim(self)
 
         if not os.path.exists(self.discrim_data_dir+'input_mols.csv'):
@@ -121,6 +121,8 @@ class ODO(object):
         print('Seed smiles {} and activity {}'.format(smi_data, activity))
         if optimize:
             opt = Optimize(data, net, seed_vec, target=target_property)
+            msd = np.average((opt.solution-seed_vec)**2)
+            print('MSD between seed and solution = {}'.format(msd))
             return opt.property, opt.solution
         else:
             return None
@@ -128,7 +130,7 @@ class ODO(object):
     def discrim_to_gen(self):
         float_bool = get_float_bool(self.discrim_data_dir, 'float_bool.csv')
         all_rounded = []
-        for i in range(20):
+        for i in range(5):
             rounded = []
             for x, is_float in zip(self.x_solution, float_bool):
                 if is_float == 1:
@@ -183,9 +185,7 @@ class ODO(object):
             vectors =  pd.read_csv(self.discrim_data_dir+'rounded.csv', header=0)
             vectors = vectors.reindex(columns=get_headings()).values
             vectors = (vectors - mew) / std
-            ## NOT TESTED
-            if len(vectors[0]) < network_size:
-                vectors = np.array([x.repeat(2) for x in vectors])
+
             #replace data with normalized vectors
             data = torch.FloatTensor(vectors)
         else:
