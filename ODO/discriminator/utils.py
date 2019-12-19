@@ -22,7 +22,7 @@ def prob_round(x):
     round_func = math.ceil if is_up else math.floor
     return sign * round_func(x)
 
-def get_opt_input(data_dir, smi_file, vec_file, target_file, index=300):
+def get_opt_input(data_dir, smi_file, vec_file, target_file, index=10):
     smi_file = data_dir+smi_file
     vec_file = data_dir+vec_file
     target_file = data_dir+target_file

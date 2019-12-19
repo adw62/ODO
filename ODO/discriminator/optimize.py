@@ -11,7 +11,7 @@ class Optimize(object):
         exp = scalery.transform([[target]])[0]
         x = scalerx.transform([seed_vec])
 
-        fprime = lambda x, exp, net: approx_fprime(x, f, 0.01, exp, net)
+        fprime = lambda x, exp, net: approx_fprime(x, f, 0.0001, exp, net)
 
         sol = minimize(f, x, args=(exp, net), jac=fprime, method='L-BFGS-B', bounds=self.bounds)
         self.property = scalery.inverse_transform([[float(net(sol.x))]])[0]
