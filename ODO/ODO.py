@@ -30,7 +30,7 @@ class ODO(object):
         self.gen_data_dir = './generator/data/'
         self.gen_ckpt_file = self.gen_data_dir+'vector_based/Prior.ckpt'
 
-        self.target = 9.2
+        self.target = 7.5
         #Make a discriminative model and use finite differnces to solev this modle for a set of inputs predicted to give a set target
         self.y_property, self.x_solution = ODO.discrim(self, target_property=self.target)
         print('Optimized solution has activity {}'.format(self.y_property))
@@ -41,7 +41,7 @@ class ODO(object):
         mew = self.gen_data_dir + 'mew.dat'
         std = self.gen_data_dir + 'std.dat'
         moments = [mew, std]
-        #train a generative model
+        #train a generative model if needed
         train_RNN = False
         if train_RNN:
             self.gen_ckpt_file = ODO.train_generator(self, moments)
@@ -56,15 +56,26 @@ class ODO(object):
         #convert smiles back into vectors to be tested by the discriminative model
         get_latent_vecs(generated_smis, self.discrim_data_dir, 'output_vecs.csv')
         try:
-            generated_vecs = pd.read_csv(self.discrim_data_dir+'output_vecs.csv', header=0, dtype=np.float64).values
+            generated_vecs = pd.read_csv(self.discrim_data_dir+'output_vecs.csv', header=0, dtype=np.float64)
+            generated_vecs = generated_vecs.reindex(columns=get_headings()).values
         except:
             raise ValueError('Try deleting {}'.format(self.discrim_data_dir+'output_vecs.csv'))
 
+        #test if generating smiles close to generation vectors
+        ODO.test_vector_msd(self, generated_vecs)
+
         predict = ODO.predict_with_discrim(self, generated_vecs)
-        #print(predict)
+        print(predict)
         print(np.average(predict), np.std(predict))
-        thresh = [True if x >= 6 else False for x in predict]
+        thresh = [True if x >= 8.5 else False for x in predict]
         print('{}/{}'.format(thresh.count(True), len(thresh)))
+
+    def test_vector_msd(self, generated_vectors):
+        vectors = pd.read_csv(self.discrim_data_dir + 'rounded.csv', header=0)
+        vectors = vectors.reindex(columns=get_headings()).values
+        vec = vectors[0]
+        msd = [np.average((vec-x)**2) for x in generated_vectors]
+        print(msd)
 
     def predict_with_discrim(self, vecs):
         data = Dataset_discrim(self.discrim_data_dir + 'input_train.csv', self.discrim_data_dir + 'input_target.csv')
@@ -77,7 +88,7 @@ class ODO(object):
         return predict
 
     def load_discrim(self, ckpt=False, eval=False):
-        net = Net(n_feature=200, n_hidden=2000, n_output=1)  # define the network
+        net = Net(n_feature=199, n_hidden=2000, n_output=1)  # define the network
         if ckpt:
             net.load_state_dict(torch.load(ckpt))
         if eval:
@@ -130,7 +141,7 @@ class ODO(object):
     def discrim_to_gen(self):
         float_bool = get_float_bool(self.discrim_data_dir, 'float_bool.csv')
         all_rounded = []
-        for i in range(5):
+        for i in range(50):
             rounded = []
             for x, is_float in zip(self.x_solution, float_bool):
                 if is_float == 1:
@@ -163,7 +174,7 @@ class ODO(object):
 
     def generate(self, data_dir, ckpt_file, mode='vectors', batch_size=1, samples=50, moments=None):
         modes = ['reinvent', 'vectors']
-        network_size = 400
+        network_size = 398
         if mode == 'reinvent':
             data = [np.zeroes(network_size)]
         elif mode == 'vectors':
@@ -178,9 +189,11 @@ class ODO(object):
                 # catch any zeros which will give nan when normalizing
                 std = np.array([x if x != 0 else 1.0 for x in std])
             else:
-                #read mew and std from file, this save some time and mem
-                mew = pd.read_csv(moments[0], header=0).values
-                std = pd.read_csv(moments[1], header=0).values
+                #read mew and std from file, this save some time and memory
+                mew = pd.read_csv(moments[0], header=0)
+                std = pd.read_csv(moments[1], header=0)
+                mew = mew.reindex(columns=get_headings()).values
+                std = std.reindex(columns=get_headings()).values
 
             vectors =  pd.read_csv(self.discrim_data_dir+'rounded.csv', header=0)
             vectors = vectors.reindex(columns=get_headings()).values
