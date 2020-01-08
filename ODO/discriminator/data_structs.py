@@ -13,7 +13,6 @@ class Dataset_discrim(Data.Dataset):
     def __init__(self, d_file, t_file):
         # Read and scale descriptors
         x = pd.read_csv(d_file, header=0)
-        # Removes smiles colum
         x = x.reindex(columns=get_headings())
         x = x.values
         scalerx = MinMaxScaler(feature_range=(0, 1))

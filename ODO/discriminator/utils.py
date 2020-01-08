@@ -11,8 +11,10 @@ from itertools import zip_longest
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
-def get_headings():
+def get_headings(Ipc=False):
     headings = [desc[0] for desc in Descriptors.descList]
+    if Ipc is False:
+        headings.remove('Ipc')
     return headings
 
 def prob_round(x):
@@ -66,7 +68,7 @@ def calc_descrs_for_smiles(smi):
 
 def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
 
-    headings = get_headings()
+    headings = get_headings(Ipc=True)
     num_lines = int(min(50000, len(mols)))
     n = int(len(mols) / num_lines)
 

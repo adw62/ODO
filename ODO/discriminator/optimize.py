@@ -11,7 +11,7 @@ class Optimize(object):
         exp = scalery.transform([[target]])[0]
         x = scalerx.transform([seed_vec])
 
-        fprime = lambda x, exp, net: approx_fprime(x, f, 0.0001, exp, net)
+        fprime = lambda x, exp, net: approx_fprime(x, f, 0.001, exp, net)
 
         sol = minimize(f, x, args=(exp, net), jac=fprime, method='L-BFGS-B', bounds=self.bounds)
         self.property = scalery.inverse_transform([[float(net(sol.x))]])[0]
@@ -23,13 +23,9 @@ def f(x, exp, net):
     return sum([(fxi-expi)**2 for fxi, expi in zip(fx, exp)])
 
 def get_bounds(data):
-    scalerx, scalery = data.get_scaler()
     tmp_data = data.x.cpu().detach().numpy()
     tmp_data = tmp_data.transpose()
     upper = [[max(x) for x in tmp_data]]
     lower = [[min(x) for x in tmp_data]]
-    upper = scalerx.transform(upper)
-    lower = scalerx.transform(lower)
     return [[x, y] for x, y in zip(lower[0], upper[0])]
-        
-        
+
