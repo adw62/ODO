@@ -7,6 +7,7 @@ from rdkit import Chem
 from rdkit import rdBase
 from tqdm import tqdm
 from os import path
+import math
 
 from .data_structs import Dataset_gen, Vocabulary
 from .model import RNN
@@ -33,8 +34,9 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
     loader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True,
                         collate_fn=Dataset_gen.collate_fn)
     network_size = len(data[0][1])
-    if network_size < 512:
-        network_size = network_size*2
+    if network_size < 330:
+        scale_net = math.ceil(330/network_size)
+        network_size = network_size*scale_net
         print('Network expanded to size {}'.format(network_size))
     Prior = RNN(voc, network_size)
 

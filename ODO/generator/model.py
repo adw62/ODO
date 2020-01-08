@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 from .utils import Variable
 
@@ -30,7 +31,9 @@ class MultiGRU(nn.Module):
     def init_h(self, batch_size, latent_vectors):
         # Initial cell state is zero
         #x = Variable(torch.zeros(3, batch_size, 330))
-        latent_vectors = latent_vectors.repeat(1, 2)
+        if len(latent_vectors) < 330:
+            scale_net = math.ceil(330/len(latent_vectors))
+            latent_vectors = latent_vectors.repeat(1, scale_net)
         return Variable(latent_vectors.repeat(3, 1, 1))
 
 class RNN():
@@ -99,8 +102,9 @@ class RNN():
 
         for step in range(max_length):
             logits, h = self.rnn(x, h) # implicitly calling forward
-            prob = F.softmax(logits)
-            log_prob = F.log_softmax(logits)
+            #print(logits.size())
+            prob = F.softmax(logits, dim=1)
+            log_prob = F.log_softmax(logits, dim=1)
             x = torch.multinomial(prob, num_samples=1).view(-1)
             sequences.append(x.view(-1, 1))
             log_probs += NLLLoss(log_prob, x)
