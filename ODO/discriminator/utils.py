@@ -24,7 +24,7 @@ def prob_round(x):
     round_func = math.ceil if is_up else math.floor
     return sign * round_func(x)
 
-def get_opt_input(data_dir, smi_file, vec_file, target_file, index=10):
+def get_opt_input(data_dir, smi_file, vec_file, target_file, index=3):
     smi_file = data_dir+smi_file
     vec_file = data_dir+vec_file
     target_file = data_dir+target_file
@@ -49,15 +49,30 @@ def calc_descrs_for_smiles(smi):
     failed = [smi]
     failed.extend([float('inf') for i in Descriptors.descList])
 
-    if smi is None:
+    if smi is None or smi == '':
+        print('Attempted to pass empty smiles')
         return failed
 
     m = Chem.MolFromSmiles(smi)
+
     if m is None:
         print('RDkit could not pass smiles')
         return failed
 
-    discp = [y(m) for x,y in Descriptors.descList]
+    try:
+        discp = [y(m) for x,y in Descriptors.descList]
+    except:
+        print('RDkit could not pass smiles')
+        return failed
+
+    '''
+    Problems:
+    nans not being caught
+    WARNING: not removing hydrogen atom without neighbors
+    if I remove smiles becasue RDkit is a waste of space then the targets are too long
+    '''
+    
+
     if float('nan') in discp:
         print('RDkit has returned a nan')
         return failed
@@ -67,7 +82,6 @@ def calc_descrs_for_smiles(smi):
     return res
 
 def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
-
     headings = get_headings(Ipc=True)
     num_lines = int(min(50000, len(mols)))
     n = int(len(mols) / num_lines)
@@ -87,8 +101,12 @@ def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
         print('Processing group {}/{}'.format(i, n))
         with Pool(processes=num_procs) as pool:
             res = pool.map(calc_descrs_for_smiles, group)
+        for x in res:
+            if float('inf') in x:
+                print(x[0])
         res = [x for x in res if float('inf') not in x]
         smi = [x.pop(0) for x in res]
+
         np.savetxt(f1, smi, header=smi_head, fmt='%s', delimiter=',', comments='', newline='\n')
         np.savetxt(f2, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
     f1.close()

@@ -25,7 +25,7 @@ class Dataset_discrim(Data.Dataset):
         y = y.values
         scalery = MinMaxScaler(feature_range=(0, 1))
         scalery.fit(y)
-        y = scalery.transform(y)
+    #y = scalery.transform(y)
         self.scalery = scalery
 
         # Save data as pytorch arrays
@@ -38,7 +38,9 @@ class Dataset_discrim(Data.Dataset):
         return ([Variable(xi), Variable(yi)])
 
     def __len__(self):
-        assert len(self.x) == len(self.y)
+        if len(self.x) != len(self.y):
+            raise ValueError('Length of compound descriptors {} does not'
+                             ' equal length of target data {}'.format(len(self.x), len(self.y)))
         return len(self.x)
 
     def get_scaler(self):

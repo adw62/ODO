@@ -5,11 +5,12 @@ from scipy.optimize import approx_fprime
 
 class Optimize(object):
     def __init__(self, data, net, seed_vec, target):
-        self.bounds = get_bounds(data)
-        scalerx, scalery = data.get_scaler()
 
+        scalerx, scalery = data.get_scaler()
         exp = scalery.transform([[target]])[0]
         x = scalerx.transform([seed_vec])
+
+        self.bounds = get_bounds(data, x[0], use_full_data_range=True)
 
         fprime = lambda x, exp, net: approx_fprime(x, f, 0.001, exp, net)
 
@@ -22,10 +23,16 @@ def f(x, exp, net):
     fx = net(x).cpu().detach().numpy()
     return sum([(fxi-expi)**2 for fxi, expi in zip(fx, exp)])
 
-def get_bounds(data):
+
+def get_bounds(data, seed, msd=0.01, use_full_data_range=True):
     tmp_data = data.x.cpu().detach().numpy()
     tmp_data = tmp_data.transpose()
-    upper = [[max(x) for x in tmp_data]]
-    lower = [[min(x) for x in tmp_data]]
-    return [[x, y] for x, y in zip(lower[0], upper[0])]
+    upper = [max(x) for x in tmp_data]
+    lower = [min(x) for x in tmp_data]
+    if not use_full_data_range:
+        msd_upper = [x+msd for x in seed]
+        msd_lower = [x-msd for x in seed]
+        upper = [min([x, y]) for x, y in zip(upper, msd_upper)]
+        lower = [max([x, y]) for x, y in zip(lower, msd_lower)]
+    return [[x, y] for x, y in zip(lower, upper)]
 

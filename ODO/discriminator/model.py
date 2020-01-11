@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from scipy.stats import linregress
 import numpy as np
+from sklearn import metrics
 
 class Net(torch.nn.Module):
     def __init__(self, n_feature, n_hidden, n_output):
@@ -58,8 +59,8 @@ class Net(torch.nn.Module):
         predict = [self(vec).cpu().detach().numpy() for vec in x]
         predict = np.array([x[0] for x in predict])
         slope, intercept, r_value, p_value, std_err = linregress(y, predict)
-        print("R-squared: %f" % r_value ** 2)
-    
+        print("r-squared: %f" % r_value ** 2)
+        print('R2: {}'.format(metrics.r2_score(y, predict)))
 
 
 
