@@ -9,7 +9,7 @@ from tqdm import tqdm
 from os import path
 import math
 
-from .data_structs import Dataset_gen, Vocabulary
+from .data_structs import Dataset_gen, Vocabulary, canonicalize_smiles_from_file, construct_vocabulary, write_smiles_to_file
 from .model import RNN
 from .utils import Variable, decrease_learning_rate
 rdBase.DisableLog('rdApp.error')
@@ -21,13 +21,22 @@ def pretrain(data_dir, voc_file, vec_file, mol_file, save_to, restore_from=None)
     mol_file = data_dir+mol_file
     save_to = data_dir+save_to
 
+    '''
+    #auto gen voc is not found
+    if not path.exists(voc_file):
+        print("Reading smiles...")
+        smiles_list = canonicalize_smiles_from_file(mol_file)
+        print("Constructing vocabulary...")
+        voc_chars = construct_vocabulary(smiles_list)
+        write_smiles_to_file(smiles_list, "data/mols_filtered.csv")
+    '''
+
     # Read vocabulary from a file
     voc = Vocabulary(init_from_file=voc_file)
 
     batch_size = 128
 
     # Create a Dataset from a SMILES file
-
     print('Found vectors, reading from file')
     data = Dataset_gen(voc, mol_file, vec_file=vec_file)
 
