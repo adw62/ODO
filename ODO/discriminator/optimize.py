@@ -24,15 +24,21 @@ def f(x, exp, net):
     return sum([(fxi-expi)**2 for fxi, expi in zip(fx, exp)])
 
 
-def get_bounds(data, seed, msd=0.01, use_full_data_range=True):
+def get_bounds(data, seed, msd=0.01, use_full_data_range=True, lock_dim=None):
     tmp_data = data.x.cpu().detach().numpy()
-    tmp_data = tmp_data.transpose()
-    upper = [max(x) for x in tmp_data]
-    lower = [min(x) for x in tmp_data]
+    t_tmp_data = tmp_data.transpose()
+    upper = [max(x) for x in t_tmp_data]
+    lower = [min(x) for x in t_tmp_data]
+    del t_tmp_data
     if not use_full_data_range:
         msd_upper = [x+msd for x in seed]
         msd_lower = [x-msd for x in seed]
         upper = [min([x, y]) for x, y in zip(upper, msd_upper)]
         lower = [max([x, y]) for x, y in zip(lower, msd_lower)]
+    if lock_dim is not None:
+        for x in lock_dim:
+            upper[x] = seed[x]
+            lower[x] = seed[x]
+
     return [[x, y] for x, y in zip(lower, upper)]
 

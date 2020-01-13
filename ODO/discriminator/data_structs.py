@@ -25,7 +25,7 @@ class Dataset_discrim(Data.Dataset):
         y = y.values
         scalery = MinMaxScaler(feature_range=(0, 1))
         scalery.fit(y)
-    #y = scalery.transform(y)
+        y = scalery.transform(y)
         self.scalery = scalery
 
         # Save data as pytorch arrays

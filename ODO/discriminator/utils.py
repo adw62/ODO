@@ -24,7 +24,7 @@ def prob_round(x):
     round_func = math.ceil if is_up else math.floor
     return sign * round_func(x)
 
-def get_opt_input(data_dir, smi_file, vec_file, target_file, index=3):
+def get_opt_input(data_dir, smi_file, vec_file, target_file, index=1):
     smi_file = data_dir+smi_file
     vec_file = data_dir+vec_file
     target_file = data_dir+target_file
@@ -56,13 +56,13 @@ def calc_descrs_for_smiles(smi):
     m = Chem.MolFromSmiles(smi)
 
     if m is None:
-        print('RDkit could not pass smiles')
+        print('RDkit could not pass smiles: {}'.format(smi))
         return failed
 
     try:
         discp = [y(m) for x,y in Descriptors.descList]
     except:
-        print('RDkit could not pass smiles')
+        print('RDkit could not pass smiles: {}'.format(smi))
         return failed
 
     '''
@@ -71,17 +71,16 @@ def calc_descrs_for_smiles(smi):
     WARNING: not removing hydrogen atom without neighbors
     if I remove smiles becasue RDkit is a waste of space then the targets are too long
     '''
-    
 
-    if float('nan') in discp:
-        print('RDkit has returned a nan')
+    if np.isnan(discp).any():
+        print('RDkit has returned a nan for smiles: {}'.format(smi))
         return failed
 
     res = [smi]
     res.extend(discp)
     return res
 
-def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
+def get_latent_vecs(mols, data_dir, file_name, target=None, num_procs=4):
     headings = get_headings(Ipc=True)
     num_lines = int(min(50000, len(mols)))
     n = int(len(mols) / num_lines)
@@ -101,16 +100,27 @@ def get_latent_vecs(mols, data_dir, file_name, num_procs=4):
         print('Processing group {}/{}'.format(i, n))
         with Pool(processes=num_procs) as pool:
             res = pool.map(calc_descrs_for_smiles, group)
-        for x in res:
-            if float('inf') in x:
-                print(x[0])
-        res = [x for x in res if float('inf') not in x]
-        smi = [x.pop(0) for x in res]
 
-        np.savetxt(f1, smi, header=smi_head, fmt='%s', delimiter=',', comments='', newline='\n')
-        np.savetxt(f2, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
+        found_inf = np.array([float('inf') in x for x in res])
+        if found_inf.any():
+            res = [x for x, y in zip(res, found_inf) if not y]
+            smi = [x.pop(0) for x in res]
+            np.savetxt(f1, smi, header=smi_head, fmt='%s', delimiter=',', comments='', newline='\n')
+            np.savetxt(f2, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
+        else:
+            smi = [x.pop(0) for x in res]
+            np.savetxt(f1, smi, header=smi_head, fmt='%s', delimiter=',', comments='', newline='\n')
+            np.savetxt(f2, res, header=header, fmt='%.18e', delimiter=',', comments='', newline='\n')
+
     f1.close()
     f2.close()
+    if found_inf.any() and target is not None:
+        if target is not None:
+            f3 = open(data_dir + 'input_target_filtered.csv', 'ab')
+            target = [x for x, y in zip(target, found_inf) if not y]
+            np.savetxt(f3, target, header='Prop', fmt='%.18e', delimiter=',', comments='', newline='\n')
+        raise ValueError('Found error in output of rdkit. A file called input_mols_filtered.csv has been writen to disk'
+                         ' with problem SMILES removed, seguest using this as input_mols.csv')
 
 
 
