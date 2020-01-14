@@ -32,7 +32,8 @@ class ODO(object):
         self.gen_data_dir = './generator/data/'
         self.gen_ckpt_file = self.gen_data_dir+'vector_based/Prior.ckpt'
 
-        self.target = 8.0
+        self.target = 6.1
+        self.mixing = 0.0
         #Make a discriminative model and use finite differnces to solev this modle for a set of inputs predicted to give a set target
         self.y_property, self.x_solution = ODO.discrim(self, target_property=self.target, train=False)
 
@@ -68,7 +69,7 @@ class ODO(object):
         #ODO.test_vector_msd(self, generated_vecs)
 
         predict = ODO.predict_with_discrim(self, generated_vecs)
-        np.savetxt('./{}.dat'.format(self.target), predict)
+        np.savetxt('./a_{}_m_{}.dat'.format(self.target, self.mixing), predict)
         print('Average activity {} and std {}'.format(np.average(predict), np.std(predict)))
         thresh_hold = 7.0
         thresh = [True if x >= thresh_hold else False for x in predict]
@@ -76,8 +77,8 @@ class ODO(object):
         print('Number of compunds created = {}'.format(len(thresh)))
         print('Precent of compounds with activity above {} = {}'.format(thresh_hold,
                                                                         100*(thresh.count(True)/len(thresh))))
-        for x in smi_above_thresh:
-            print(x[0])
+        for x in generated_smis:
+            print(x)
 
     def test_vector_msd(self, generated_vectors):
         vectors = pd.read_csv(self.discrim_data_dir + 'rounded.csv', header=0)
@@ -153,22 +154,33 @@ class ODO(object):
             opt = Optimize(data, net, seed_vec, target=target_property)
             msd = np.average((opt.solution-seed_vec)**2)
 
-            neighbour = ODO.k_near_search(self, opt.solution, self.gen_data_dir+'vector_based/vecs.csv')
-            msd_lib = np.average((opt.solution - neighbour) ** 2)
+            [neighbour_vec, neighbour_index] = ODO.k_near_search(self, opt.solution, self.gen_data_dir+'vector_based/vecs.csv')
+            print(ODO.get_smiles_by_index(self, [neighbour_index]))
+            msd_lib = np.average((opt.solution - neighbour_vec) ** 2)
             print('MSD between gen lib and og solution = {}'.format(msd_lib))
 
-            opt.solution = (neighbour + opt.solution) / 2
-            msd_lib = np.average((opt.solution-neighbour)**2)
+            mixing = self.mixing
+            print('Mixing param has value {}'.format(mixing))
+            opt.solution = neighbour_vec*mixing + opt.solution*(1-mixing)
+            msd_lib = np.average((opt.solution-neighbour_vec)**2)
             print('MSD between gen lib and fudged solution = {}'.format(msd_lib))
 
             print('MSD between seed and solution = {}'.format(msd))
 
-            if (neighbour == seed_vec).all():
+            if (neighbour_vec == seed_vec).all():
                 print('Seed is neighbour')
 
             return opt.property, opt.solution
         else:
             return None
+
+    def get_smiles_by_index(self, idxs):
+        data = pd.read_csv(self.gen_data_dir+'input_mols_filtered.csv', header=0).values
+        # correct heading order
+        smiles = []
+        for i in idxs:
+            smiles.append(str(data[i][0]))
+        return smiles
 
     def k_near_search(self, vector, lib_vec_file, num_neighbours=1):
         # vector is vector for compund we want to search for neigbours of
@@ -189,7 +201,7 @@ class ODO(object):
             all_neigh_index.append(ans[1] + (i * chunksize))
             all_neigh_vec.append(traning_data[ans[1]])
 
-        result = [x for _, x in sorted(zip(all_neigh_dist, all_neigh_vec), key=lambda pair: pair[0])]
+        result = [[x, y] for _, x, y in sorted(zip(all_neigh_dist, all_neigh_vec, all_neigh_index), key=lambda pair: pair[0])]
         return result[0]
 
     def discrim_to_gen(self):
